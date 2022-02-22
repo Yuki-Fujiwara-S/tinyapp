@@ -41,7 +41,7 @@ app.get("/urls", (req, res) => {
 });
 
 
-//Doesn't work yet - redirects to right link, Tiny URL doesnt work
+//Works! Redirects and shows TinyURLFor
 app.post("/urls", (req, res) => {
   console.log(req.body);  // Log the POST request body to the console
   const randomString = generateRandomString();
@@ -54,15 +54,22 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
 
-//Doesn't work yet -> longURL may be incorrect
+//Seems to work now that we fixed the POST /urls redirect
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  //console.log("templateVars: ", templateVars);
   res.render("urls_show", templateVars);
 });
 
-//Doesn't work yet -> longURL may be incorrect/ clarify req.params with mentor
+//Doesn't work yet -> longURL may be/probably incorrect/ clarify req.params with mentor
+// Why is req.params.shortURL not doing what I expect? Its undefined.
 app.get("/u/:shortURL", (req, res) => {
+  console.log(req.params.shortURL)
+  //const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  //console.log("templateVars: ", templateVars, "req: ", req);
   const longURL = urlDatabase[req.params.shortURL];
+  console.log('URL', longURL)
+  // console.log("longURL: ", longURL, "urlDatabase: ", urlDatabase, "req.params: ", req.params, "req.params.shortURL: ", req.params.shortURL);
   res.redirect(longURL);
 });
 
