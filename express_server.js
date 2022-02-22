@@ -61,14 +61,13 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
-//Doesn't work yet -> longURL may be/probably incorrect/ clarify req.params with mentor
-// Why is req.params.shortURL not doing what I expect? Its undefined.
+//Works! error was to do with not inputting http
 app.get("/u/:shortURL", (req, res) => {
   console.log(req.params.shortURL)
   //const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
   //console.log("templateVars: ", templateVars, "req: ", req);
   const longURL = urlDatabase[req.params.shortURL];
-  console.log('URL', longURL)
+  // console.log('URL', longURL)
   // console.log("longURL: ", longURL, "urlDatabase: ", urlDatabase, "req.params: ", req.params, "req.params.shortURL: ", req.params.shortURL);
   res.redirect(longURL);
 });
