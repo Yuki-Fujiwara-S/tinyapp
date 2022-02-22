@@ -47,7 +47,7 @@ app.post("/urls", (req, res) => {
   const randomString = generateRandomString();
   urlDatabase[randomString] = req.body.longURL;
   console.log("urlDatabase", urlDatabase, "req.body.longURL:", req.body.longURL, typeof req.body.longURL);
-  res.redirect(`/urls/:${randomString}`);         
+  res.redirect(`/urls/${randomString}`);         
 });
 
 app.get("/urls/new", (req, res) => {
