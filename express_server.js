@@ -40,18 +40,30 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
+
+//Doesn't work yet - redirects to right link, Tiny URL doesnt work
 app.post("/urls", (req, res) => {
   console.log(req.body);  // Log the POST request body to the console
-  res.send("Ok");         // Respond with 'Ok' (we will replace this)
+  const randomString = generateRandomString();
+  urlDatabase[randomString] = req.body.longURL;
+  console.log("urlDatabase", urlDatabase, "req.body.longURL:", req.body.longURL, typeof req.body.longURL);
+  res.redirect(`/urls/:${randomString}`);         
 });
 
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
 
+//Doesn't work yet -> longURL may be incorrect
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
   res.render("urls_show", templateVars);
+});
+
+//Doesn't work yet -> longURL may be incorrect/ clarify req.params with mentor
+app.get("/u/:shortURL", (req, res) => {
+  const longURL = urlDatabase[req.params.shortURL];
+  res.redirect(longURL);
 });
 
 
