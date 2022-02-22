@@ -3,7 +3,7 @@ const app = express();
 const PORT = 8080;
 
 
-function generateRandomString() {
+const generateRandomString = function() {
   const stringLength = 6;
   const lowerCaseAlph = "abcdefghijklmnopqrtsuvwxyz";
   const upperCaseAlph = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -11,15 +11,13 @@ function generateRandomString() {
   const alphaNumericals = `${lowerCaseAlph}${upperCaseAlph}${numbers}`;
   let output = "";
 
-  for (i = 0; i < stringLength; i++) {
-    output += alphaNumericals[(Math.floor(Math.random() * alphaNumericals.length))]
+  for (let i = 0; i < stringLength; i++) {
+    output += alphaNumericals[(Math.floor(Math.random() * alphaNumericals.length))];
   }
   return output;
-}
+};
 
-console.log(generateRandomString());
-console.log(generateRandomString());
-console.log(generateRandomString());
+
 
 
 
