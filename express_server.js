@@ -18,9 +18,6 @@ const generateRandomString = function() {
 };
 
 
-
-
-
 app.set("view engine", "ejs");
 
 const urlDatabase = {
@@ -43,10 +40,8 @@ app.get("/urls", (req, res) => {
 
 //Works! Redirects and shows TinyURLFor
 app.post("/urls", (req, res) => {
-  console.log(req.body);  // Log the POST request body to the console
   const randomString = generateRandomString();
   urlDatabase[randomString] = req.body.longURL;
-  console.log("urlDatabase", urlDatabase, "req.body.longURL:", req.body.longURL, typeof req.body.longURL);
   res.redirect(`/urls/${randomString}`);         
 });
 
@@ -57,18 +52,12 @@ app.get("/urls/new", (req, res) => {
 //Seems to work now that we fixed the POST /urls redirect
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
-  //console.log("templateVars: ", templateVars);
   res.render("urls_show", templateVars);
 });
 
 //Works! error was to do with not inputting http
 app.get("/u/:shortURL", (req, res) => {
-  console.log(req.params.shortURL)
-  //const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
-  //console.log("templateVars: ", templateVars, "req: ", req);
   const longURL = urlDatabase[req.params.shortURL];
-  // console.log('URL', longURL)
-  // console.log("longURL: ", longURL, "urlDatabase: ", urlDatabase, "req.params: ", req.params, "req.params.shortURL: ", req.params.shortURL);
   res.redirect(longURL);
 });
 
@@ -78,6 +67,20 @@ app.post('/urls/:shortURL/delete', (req, res) => {
   delete urlDatabase[shortURL];
   res.redirect("/urls");
 })
+
+// Update POST /urls/:shortURL/delete
+app.post('/urls/:shortURL/update', (req, res) => {
+  const shortURL = req.params.shortURL;
+  urlDatabase[shortURL] = req.body.longURL;
+  res.redirect("/urls");
+})
+
+// Update POST /urls/:id
+// app.post('/urls/:id', (req, res) => {
+//   const id = req.params.id;
+//   urlDatabase[id] = req.body.longURL;
+//   res.redirect("/urls");
+// })
 
 
 app.get("/urls.json", (req, res) => {
