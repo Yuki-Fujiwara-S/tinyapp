@@ -2,6 +2,9 @@ const express = require("express");
 const app = express();
 const PORT = 8080;
 
+const cookieParser = require('cookie-parser');
+app.use(cookieParser())
+
 
 const generateRandomString = function() {
   const stringLength = 6;
@@ -32,8 +35,12 @@ app.get("/", (req, res) => {
   res.send("Hello!");
 });
 
+//Error being throw here
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase };
+  const templateVars = { 
+    urls: urlDatabase,
+    username: req.cookies["username"] 
+  };
   res.render("urls_index", templateVars);
 });
 
@@ -45,13 +52,21 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${randomString}`);         
 });
 
+//error thrown
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  const templateVars = {
+    username: req.cookies["username"]
+  };
+  res.render("urls_new", templateVars);
 });
 
-//Seems to work now that we fixed the POST /urls redirect
+//error thrown
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  const templateVars = { 
+    shortURL: req.params.shortURL, 
+    longURL: urlDatabase[req.params.shortURL],
+    username: req.cookies["username"]
+   };
   res.render("urls_show", templateVars);
 });
 
@@ -72,6 +87,19 @@ app.post('/urls/:shortURL/delete', (req, res) => {
 app.post('/urls/:shortURL/update', (req, res) => {
   const shortURL = req.params.shortURL;
   urlDatabase[shortURL] = req.body.longURL;
+  res.redirect("/urls");
+})
+
+// Update POST /login
+app.post('/login', (req, res) => {
+  const { username } = req.body;
+  res.cookie("username", username);
+  res.redirect("/urls");
+})
+
+// Update POST /login
+app.post('/logout', (req, res) => {
+  res.clearCookie("username");
   res.redirect("/urls");
 })
 
