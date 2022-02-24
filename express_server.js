@@ -93,6 +93,11 @@ app.get("/register", (req, res) => {
   res.render("registration");
 });
 
+// Read GET /login
+app.get("/login", (req, res) => {
+  res.render("login");
+});
+
 // Delete POST /urls/:shortURL/delete
 app.post('/urls/:shortURL/delete', (req, res) => {
   const shortURL = req.params.shortURL;
