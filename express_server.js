@@ -76,7 +76,6 @@ app.get("/urls/:shortURL", (req, res) => {
   const templateVars = { 
     shortURL: req.params.shortURL, 
     longURL: urlDatabase[req.params.shortURL],
-    // username: req.cookies["username"]
     user: users[req.cookies["user_id"]]
    };
   res.render("urls_show", templateVars);
@@ -90,12 +89,18 @@ app.get("/u/:shortURL", (req, res) => {
 
 // Read GET /register
 app.get("/register", (req, res) => {
-  res.render("registration");
+  const templateVars = {
+    user: users[req.cookies["user_id"]]
+  };
+  res.render("registration", templateVars);
 });
 
 // Read GET /login
 app.get("/login", (req, res) => {
-  res.render("login");
+  const templateVars = {
+    user: users[req.cookies["user_id"]]
+  };
+  res.render("login", templateVars);
 });
 
 // Delete POST /urls/:shortURL/delete
@@ -114,8 +119,18 @@ app.post('/urls/:shortURL/update', (req, res) => {
 
 // Update POST /login
 app.post('/login', (req, res) => {
-  const { username } = req.body;
-  res.cookie("username", username);
+  const { error } = checkLogin(users, req.body);
+
+  if (error) {
+    console.log(error);
+    return res.redirect(403, "/urls");
+  }
+
+  const { email } = req.body;
+  const userID = getIDfromEmail(email);
+
+
+  res.cookie("user_id", userID);
   res.redirect("/urls");
 })
 
@@ -128,7 +143,7 @@ app.post('/logout', (req, res) => {
 // Update POST /register - adds a new user to global user object
 app.post('/register', (req, res) => {
   user_id = generateRandomString();
-  const { error } = creatValidUser(users, req.body);
+  const { error } = checkValidRegistration(users, req.body);
   if (error) {
     console.log(error);
     return res.redirect(400, "/urls");
@@ -142,7 +157,32 @@ app.post('/register', (req, res) => {
   res.redirect("/urls");
 })
 
-const creatValidUser = function(userDB, userInfo) {
+const checkLogin = function(userDB, userInfo) {
+  const { email, password } = userInfo;
+  const userID = getIDfromEmail(email);
+
+  if (password !== userDB[userID].password) {
+    return { error: "Error. Status 403" };
+  }
+
+  if (!emailLookup(userDB, email)) {
+    return { error: "Error. Status 403" };
+  }
+  return { error: null };
+};
+
+const getIDfromEmail = function(userDB, email) {
+  let userID = null;
+  for (let user in userDB) {
+    console.log(userDB[user].email);
+    if (email === userDB[user].email) {
+      userID = userDB[user].id;
+    } 
+  }
+  return userID;
+};
+
+const checkValidRegistration = function(userDB, userInfo) {
   const { email, password } = userInfo;
   if (!email || !password) {
     return { error: "Error. Status 400"};
@@ -152,7 +192,7 @@ const creatValidUser = function(userDB, userInfo) {
     return { error: "Error. Status 400" };
   }
   return { error: null };
-}
+};
 
 
 const emailLookup = function(userDB, email) {
