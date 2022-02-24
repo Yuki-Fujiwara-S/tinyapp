@@ -127,8 +127,7 @@ app.post('/login', (req, res) => {
   }
 
   const { email } = req.body;
-  const userID = getIDfromEmail(email);
-
+  const userID = getIDfromEmail(users, email);
 
   res.cookie("user_id", userID);
   res.redirect("/urls");
@@ -142,16 +141,16 @@ app.post('/logout', (req, res) => {
 
 // Update POST /register - adds a new user to global user object
 app.post('/register', (req, res) => {
-  user_id = generateRandomString();
+  const user_id = generateRandomString();
   const { error } = checkValidRegistration(users, req.body);
   if (error) {
     console.log(error);
     return res.redirect(400, "/urls");
   }
 
-  const {email, password} = req.body
+  const {email, password} = req.body;
 
-  users[user_id] = { user_id, email, password };
+  users[user_id] = { id: user_id, email, password };
   console.log(users);
   res.cookie("user_id", user_id);
   res.redirect("/urls");
@@ -159,13 +158,14 @@ app.post('/register', (req, res) => {
 
 const checkLogin = function(userDB, userInfo) {
   const { email, password } = userInfo;
-  const userID = getIDfromEmail(email);
+  const userID = getIDfromEmail(users, email);
+  console.log(userID);
 
-  if (password !== userDB[userID].password) {
+  if (!emailLookup(userDB, email)) {
     return { error: "Error. Status 403" };
   }
 
-  if (!emailLookup(userDB, email)) {
+  if (password !== userDB[userID].password) {
     return { error: "Error. Status 403" };
   }
   return { error: null };
@@ -176,7 +176,7 @@ const getIDfromEmail = function(userDB, email) {
   for (let user in userDB) {
     console.log(userDB[user].email);
     if (email === userDB[user].email) {
-      userID = userDB[user].id;
+      userID = userDB[user]["id"];
     } 
   }
   return userID;
