@@ -43,7 +43,7 @@ const users = {
     email: "user2@example.com", 
     password: "dishwasher-funk"
   }
-}
+};
 
 
 //
@@ -116,18 +116,51 @@ app.post('/login', (req, res) => {
 
 // Update POST /logout
 app.post('/logout', (req, res) => {
-  res.clearCookie("username");
+  res.clearCookie("user_id");
   res.redirect("/urls");
 })
 
 // Update POST /register - adds a new user to global user object
 app.post('/register', (req, res) => {
   user_id = generateRandomString();
-  const { email, password } = req.body;
+  const { error } = creatValidUser(users, req.body);
+  if (error) {
+    console.log(error);
+    return res.redirect(400, "/urls");
+  }
+
+  const {email, password} = req.body
+
   users[user_id] = { user_id, email, password };
+  console.log(users);
   res.cookie("user_id", user_id);
   res.redirect("/urls");
 })
+
+const creatValidUser = function(userDB, userInfo) {
+  const { email, password } = userInfo;
+  if (!email || !password) {
+    return { error: "Error. Status 400"};
+  }
+
+  if (emailLookup(userDB, email)) {
+    return { error: "Error. Status 400" };
+  }
+  return { error: null };
+}
+
+
+const emailLookup = function(userDB, email) {
+  let outputBool = false;
+  console.log(email);
+  for (let user in userDB) {
+    console.log(userDB[user].email);
+    if (email === userDB[user].email) {
+      outputBool = true;
+    } 
+  }
+  return outputBool;
+};
 
 // Update POST /urls/:id
 // app.post('/urls/:id', (req, res) => {
