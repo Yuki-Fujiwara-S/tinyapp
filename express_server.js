@@ -27,9 +27,20 @@ const generateRandomString = function() {
 
 
 
+// const urlDatabase = {
+//   "b2xVn2": "http://www.lighthouselabs.ca",
+//   "9sm5xK": "http://www.google.com"
+// };
+
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  b6UTxQ: {
+      longURL: "https://www.tsn.ca",
+      userID: "aJ48lW"
+  },
+  i3BoGr: {
+      longURL: "https://www.google.ca",
+      userID: "aJ48lW"
+  }
 };
 
 const users = { 
@@ -45,6 +56,8 @@ const users = {
   }
 };
 
+let isLoggedIn = false;
+
 
 //
 app.get("/urls", (req, res) => {
@@ -59,31 +72,38 @@ app.get("/urls", (req, res) => {
 //Works! Redirects and shows TinyURLFor
 app.post("/urls", (req, res) => {
   const randomString = generateRandomString();
-  urlDatabase[randomString] = req.body.longURL;
+  urlDatabase[randomString] = {};
+  urlDatabase[randomString].longURL = req.body.longURL;
   if (req.cookies["user_id"]) {
+    urlDatabase[randomString].userID = req.cookies["user_id"];
     return res.redirect(`/urls/${randomString}`);   
   } else {
     return res.redirect(403, "/login");
   }       
 });
 
-//error thrown
+//Why is it not working?
 app.get("/urls/new", (req, res) => {
   const templateVars = {
     user: users[req.cookies["user_id"]]
   };
-  if (req.cookies["user_id"]) {
+  if (isLoggedIn) {
     return res.render("urls_new", templateVars);
   } else {
-    return res.redirect("/login")
+    return res.redirect("/login");
   }
+  // if (req.cookies["user_id"]) {
+  //   return res.render("urls_new", templateVars);
+  // } else {
+  //   return res.redirect("/login");
+  // }
 });
 
-//error thrown
+//
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = { 
     shortURL: req.params.shortURL, 
-    longURL: urlDatabase[req.params.shortURL],
+    longURL: urlDatabase[req.params.shortURL].longURL,
     user: users[req.cookies["user_id"]]
    };
   res.render("urls_show", templateVars);
@@ -91,8 +111,12 @@ app.get("/urls/:shortURL", (req, res) => {
 
 //Works! error was to do with not inputting http
 app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL];
-  res.redirect(longURL);
+  if (urlDatabase[req.params.shortURL]){
+    const longURL = urlDatabase[req.params.shortURL].longURL;
+    res.redirect(longURL);
+  } else {
+    res.redirect(403, "/urls")
+  }
 });
 
 // Read GET /register
@@ -121,7 +145,10 @@ app.post('/urls/:shortURL/delete', (req, res) => {
 // Update POST /urls/:shortURL/update
 app.post('/urls/:shortURL/update', (req, res) => {
   const shortURL = req.params.shortURL;
-  urlDatabase[shortURL] = req.body.longURL;
+  urlDatabase[shortURL] = {};
+  urlDatabase[shortURL].longURL = req.body.longURL;
+  urlDatabase[shortURL].id = req.cookies["user_id"];
+  console.log(urlDatabase);
   res.redirect("/urls");
 })
 
@@ -133,7 +160,7 @@ app.post('/login', (req, res) => {
     console.log(error);
     return res.redirect(403, "/urls");
   }
-
+  isLoggedIn = true;
   const { email } = req.body;
   const userID = getIDfromEmail(users, email);
 
@@ -144,6 +171,7 @@ app.post('/login', (req, res) => {
 // Update POST /logout
 app.post('/logout', (req, res) => {
   res.clearCookie("user_id");
+  isLoggedIn = false;
   res.redirect("/urls");
 })
 
@@ -161,6 +189,7 @@ app.post('/register', (req, res) => {
   users[user_id] = { id: user_id, email, password };
   // console.log(users);
   res.cookie("user_id", user_id);
+  isLoggedIn = true;
   res.redirect("/urls");
 })
 
