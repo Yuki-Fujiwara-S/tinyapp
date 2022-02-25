@@ -7,8 +7,6 @@ const cookieSession = require('cookie-session');
 app.use(cookieSession({
   name: 'session',
   keys: ['secret key1', 'secret key2'],
-
-  // Cookie Options
   maxAge: 24 * 60 * 60 * 1000 // 24 hours
 }))
 
@@ -21,7 +19,6 @@ const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
 
 const bcrypt = require('bcryptjs');
-
 
 const urlDatabase = {
   b6UTxQ: {
@@ -47,7 +44,15 @@ const users = {
   }
 };
 
+// GET /
+app.get("/", (req, res) => {
+  if (!req.session.user_id) {
+    return res.redirect("/login");
+  }
+  return res.redirect("/urls")
+});
 
+// GET /urls
 app.get("/urls", (req, res) => {
   if (!req.session.user_id) {
     return res.status(403).send('<h1> User must log in to access URLs <a href="/login"> Log in here </a> </h1>');
@@ -60,21 +65,7 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
-
-//Works! Redirects and shows TinyURLFor
-app.post("/urls", (req, res) => {
-  if (!req.session.user_id){
-    return res.redirect(403, "/login");
-  }
-  const randomString = generateRandomString();
-  urlDatabase[randomString] = { 
-    longURL:req.body.longURL, 
-    userID:req.session.user_id
-  };
-  return res.redirect(`/urls/${randomString}`);   
-});
-
-//
+// GET /urls/new
 app.get("/urls/new", (req, res) => {
   if (!req.session.user_id) {
     return res.redirect("/login");
@@ -85,7 +76,7 @@ app.get("/urls/new", (req, res) => {
   return res.render("urls_new", templateVars);
 });
 
-//
+// GET /urls/:shortURL
 app.get("/urls/:shortURL", (req, res) => {
   if (!req.session.user_id){
     return res.status(403).send('<h1> User must log in to access URLs <a href="/login"> Log in here </a> </h1>');
@@ -98,7 +89,7 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
-//Works! error was to do with not inputting http
+// GET /u/:id
 app.get("/u/:shortURL", (req, res) => {
   if (!urlDatabase[req.params.shortURL]){
     res.redirect(403, "/urls")
@@ -107,20 +98,29 @@ app.get("/u/:shortURL", (req, res) => {
   res.redirect(longURL);
 });
 
-// Read GET /register
-app.get("/register", (req, res) => {
-  const templateVars = {
-    user: users[req.session.user_id]
+
+// POST /urls
+app.post("/urls", (req, res) => {
+  if (!req.session.user_id){
+    return res.redirect(403, "/login");
+  }
+  const randomString = generateRandomString();
+  urlDatabase[randomString] = { 
+    longURL:req.body.longURL, 
+    userID:req.session.user_id
   };
-  res.render("registration", templateVars);
+  return res.redirect(`/urls/${randomString}`);   
 });
 
-// Read GET /login
-app.get("/login", (req, res) => {
-  const templateVars = {
-    user: users[req.session.user_id]
-  };
-  res.render("login", templateVars);
+// Update POST /urls/:shortURL/update --> Gave it this name instead of just /urls/:id because it made it easier for me to follow
+app.post('/urls/:shortURL/update', (req, res) => {
+  const shortURL = req.params.shortURL;
+  const urls = urlsForUser(req.session.user_id, urlDatabase);
+  if (!urls[shortURL]) {
+    return res.status(403).send('<h1> You do not have access to the URL </h1>')
+  }
+  urlDatabase[shortURL] = { longURL: req.body.longURL, userID: req.session.user_id}
+  res.redirect("/urls");
 });
 
 // Delete POST /urls/:shortURL/delete
@@ -132,22 +132,25 @@ app.post('/urls/:shortURL/delete', (req, res) => {
   }
   delete urlDatabase[shortURL];
   res.redirect("/urls");
-})
+});
 
-// Update POST /urls/:shortURL/update
-app.post('/urls/:shortURL/update', (req, res) => {
-  const shortURL = req.params.shortURL;
-  const urls = urlsForUser(req.session.user_id, urlDatabase);
-  if (!urls[shortURL]) {
-    return res.status(403).send('<h1> You do not have access to the URL </h1>')
-  }
-  urlDatabase[shortURL] = {};
-  urlDatabase[shortURL].longURL = req.body.longURL;
-  urlDatabase[shortURL].id = req.session.user_id;
-  res.redirect("/urls");
-})
+// GET /login
+app.get("/login", (req, res) => {
+  const templateVars = {
+    user: users[req.session.user_id]
+  };
+  res.render("login", templateVars);
+});
 
-// Update POST /login
+// GET /register
+app.get("/register", (req, res) => {
+  const templateVars = {
+    user: users[req.session.user_id]
+  };
+  res.render("registration", templateVars);
+});
+
+// POST /login
 app.post('/login', (req, res) => {
   const { error } = checkLogin(users, req.body);
 
@@ -168,21 +171,15 @@ app.post('/login', (req, res) => {
         return res.status(401).send('Password incorrect');
       }
     });
-})
+});
 
-// Update POST /logout
-app.post('/logout', (req, res) => {
-  req.session.user_id = null;
-  res.redirect("/urls");
-})
-
-// Update POST /register - adds a new user to global user object
+// POST /register - adds a new user to global user object
 app.post('/register', (req, res) => {
   const user_id = generateRandomString();
   const { error } = checkValidRegistration(users, req.body);
   if (error) {
     console.log(error);
-    return res.redirect(400, "/urls");
+    return res.status(403).send(`<h1> ${error} <a href="/register"> Register here </a> </h1>`);
   }
 
   const {email, password} = req.body;
@@ -195,13 +192,18 @@ app.post('/register', (req, res) => {
       req.session.user_id = user_id;
       res.redirect("/urls");
     })
-})
+});
 
+// Update POST /logout
+app.post('/logout', (req, res) => {
+  req.session.user_id = null;
+  res.redirect("/urls");
+});
 
+// GET /urls.json
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
-
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
