@@ -10,6 +10,8 @@ app.set("view engine", "ejs");
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
 
+const bcrypt = require('bcryptjs');
+
 
 const generateRandomString = function() {
   const stringLength = 6;
@@ -178,11 +180,18 @@ app.post('/login', (req, res) => {
     return res.redirect(403, "/urls");
   }
 
-  const { email } = req.body;
+  const { email, password } = req.body;
   const userID = getIDfromEmail(users, email);
 
-  res.cookie("user_id", userID);
-  res.redirect("/urls");
+  bcrypt.compare(password, users[userID].password)
+    .then((result) => {
+      if (result) {
+        res.cookie("user_id", userID);
+        res.redirect("/urls");
+      } else {
+        return res.status(401).send('Password incorrect');
+      }
+    });
 })
 
 // Update POST /logout
@@ -201,10 +210,15 @@ app.post('/register', (req, res) => {
   }
 
   const {email, password} = req.body;
-
-  users[user_id] = { id: user_id, email, password };
-  res.cookie("user_id", user_id);
-  res.redirect("/urls");
+  bcrypt.genSalt(10)
+    .then((salt) => {
+      return bcrypt.hash(password, salt);
+    })
+    .then((hash) => {
+      users[user_id] = { id: user_id, email, password: hash };
+      res.cookie("user_id", user_id);
+      res.redirect("/urls");
+    })
 })
 
 const checkLogin = function(userDB, userInfo) {
@@ -212,11 +226,11 @@ const checkLogin = function(userDB, userInfo) {
   const userID = getIDfromEmail(users, email);
 
   if (!emailLookup(userDB, email)) {
-    return { error: "Error. Status 403" };
+    return { error: "Error. Status 403. Email doesn't exist" };
   }
-  if (password !== userDB[userID].password) {
-    return { error: "Error. Status 403" };
-  }
+  // if (password !== userDB[userID].password) {
+  //   return { error: "Error. Status 403. Incorrect password" };
+  // }
   return { error: null };
 };
 
