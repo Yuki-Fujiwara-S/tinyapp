@@ -10,9 +10,6 @@ app.use(cookieSession({
   maxAge: 24 * 60 * 60 * 1000 // 24 hours
 }));
 
-const cookieParser = require('cookie-parser');
-app.use(cookieParser());
-
 app.set("view engine", "ejs");
 
 const bodyParser = require("body-parser");
