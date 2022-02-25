@@ -4,13 +4,13 @@ TinyApp is a full stack web application built with Node and Express that allows 
 
 ## Final Product
 
-!["Screenshot of register page"](#)
+!["Screenshot of register page"](https://github.com/shiawase7/tinyapp/blob/master/docs/register.png?raw=true)
 
-!["Screenshot of login page"](#)
+!["Screenshot of login page"](https://github.com/shiawase7/tinyapp/blob/master/docs/login.png?raw=true)
 
-!["Screenshot of /urls page when logged in"](#)
+!["Screenshot of /urls page when logged in"](https://github.com/shiawase7/tinyapp/blob/master/docs/loggedin.png?raw=true)
 
-!["Screenshot of /urls page after adding urls to shorten"](#)
+!["Screenshot of /urls page after adding urls to shorten"](https://github.com/shiawase7/tinyapp/blob/master/docs/urls-added.png?raw=true)
 
 ## Dependencies
 
