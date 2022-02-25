@@ -3,7 +3,7 @@ const app = express();
 const PORT = 8080;
 
 const cookieParser = require('cookie-parser');
-app.use(cookieParser())
+app.use(cookieParser());
 
 app.set("view engine", "ejs");
 
@@ -26,11 +26,6 @@ const generateRandomString = function() {
 };
 
 
-
-// const urlDatabase = {
-//   "b2xVn2": "http://www.lighthouselabs.ca",
-//   "9sm5xK": "http://www.google.com"
-// };
 
 const urlDatabase = {
   b6UTxQ: {
@@ -56,13 +51,31 @@ const users = {
   }
 };
 
-let isLoggedIn = false;
 
+// function should return Object with keys pointing to objects
+
+const urlsForUser = function(id, urlDB) {
+  let specificUrlDB = {};
+  for (let sixDigURL in urlDB) {
+    console.log(urlDB[sixDigURL]);
+    if (id === urlDB[sixDigURL].userID) {
+      specificUrlDB[sixDigURL] = urlDB[sixDigURL];
+    }
+  }
+  return specificUrlDB;
+}; 
+
+// urlsForUser("aJ48lW", urlDatabase);
 
 //
 app.get("/urls", (req, res) => {
+  if (!req.cookies["user_id"]) {
+    return res.status(403).send('<h1> User must log in to access URLs <a href="/login"> Log in here </a> </h1>');
+  }
+  const urls = urlsForUser(req.cookies["user_id"], urlDatabase);
+  console.log("urls", urls);
   const templateVars = { 
-    urls: urlDatabase,
+    urls: urls,
     user: users[req.cookies["user_id"]]
   };
   res.render("urls_index", templateVars);
@@ -71,36 +84,33 @@ app.get("/urls", (req, res) => {
 
 //Works! Redirects and shows TinyURLFor
 app.post("/urls", (req, res) => {
-  const randomString = generateRandomString();
-  urlDatabase[randomString] = {};
-  urlDatabase[randomString].longURL = req.body.longURL;
-  if (req.cookies["user_id"]) {
-    urlDatabase[randomString].userID = req.cookies["user_id"];
-    return res.redirect(`/urls/${randomString}`);   
-  } else {
+  if (!req.cookies["user_id"]){
     return res.redirect(403, "/login");
-  }       
+  }
+  const randomString = generateRandomString();
+  urlDatabase[randomString] = { 
+    longURL:req.body.longURL, 
+    userID:req.cookies["user_id"] 
+  };
+  return res.redirect(`/urls/${randomString}`);   
 });
 
-//Why is it not working?
+//
 app.get("/urls/new", (req, res) => {
+  if (!req.cookies["user_id"]) {
+    return res.redirect("/login");
+  }
   const templateVars = {
     user: users[req.cookies["user_id"]]
   };
-  if (isLoggedIn) {
-    return res.render("urls_new", templateVars);
-  } else {
-    return res.redirect("/login");
-  }
-  // if (req.cookies["user_id"]) {
-  //   return res.render("urls_new", templateVars);
-  // } else {
-  //   return res.redirect("/login");
-  // }
+  return res.render("urls_new", templateVars);
 });
 
 //
 app.get("/urls/:shortURL", (req, res) => {
+  if (!req.cookies["user_id"]){
+    return res.status(403).send('<h1> User must log in to access URLs <a href="/login"> Log in here </a> </h1>');
+  }
   const templateVars = { 
     shortURL: req.params.shortURL, 
     longURL: urlDatabase[req.params.shortURL].longURL,
@@ -111,12 +121,11 @@ app.get("/urls/:shortURL", (req, res) => {
 
 //Works! error was to do with not inputting http
 app.get("/u/:shortURL", (req, res) => {
-  if (urlDatabase[req.params.shortURL]){
-    const longURL = urlDatabase[req.params.shortURL].longURL;
-    res.redirect(longURL);
-  } else {
+  if (!urlDatabase[req.params.shortURL]){
     res.redirect(403, "/urls")
-  }
+  } 
+  const longURL = urlDatabase[req.params.shortURL].longURL;
+  res.redirect(longURL);
 });
 
 // Read GET /register
@@ -138,6 +147,10 @@ app.get("/login", (req, res) => {
 // Delete POST /urls/:shortURL/delete
 app.post('/urls/:shortURL/delete', (req, res) => {
   const shortURL = req.params.shortURL;
+  const urls = urlsForUser(req.cookies["user_id"], urlDatabase);
+  if (!urls[shortURL]) {
+    return res.status(403).send('<h1> You do not have access to the URL </h1>')
+  }
   delete urlDatabase[shortURL];
   res.redirect("/urls");
 })
@@ -145,6 +158,10 @@ app.post('/urls/:shortURL/delete', (req, res) => {
 // Update POST /urls/:shortURL/update
 app.post('/urls/:shortURL/update', (req, res) => {
   const shortURL = req.params.shortURL;
+  const urls = urlsForUser(req.cookies["user_id"], urlDatabase);
+  if (!urls[shortURL]) {
+    return res.status(403).send('<h1> You do not have access to the URL </h1>')
+  }
   urlDatabase[shortURL] = {};
   urlDatabase[shortURL].longURL = req.body.longURL;
   urlDatabase[shortURL].id = req.cookies["user_id"];
@@ -160,7 +177,7 @@ app.post('/login', (req, res) => {
     console.log(error);
     return res.redirect(403, "/urls");
   }
-  isLoggedIn = true;
+
   const { email } = req.body;
   const userID = getIDfromEmail(users, email);
 
@@ -171,7 +188,6 @@ app.post('/login', (req, res) => {
 // Update POST /logout
 app.post('/logout', (req, res) => {
   res.clearCookie("user_id");
-  isLoggedIn = false;
   res.redirect("/urls");
 })
 
@@ -187,21 +203,17 @@ app.post('/register', (req, res) => {
   const {email, password} = req.body;
 
   users[user_id] = { id: user_id, email, password };
-  // console.log(users);
   res.cookie("user_id", user_id);
-  isLoggedIn = true;
   res.redirect("/urls");
 })
 
 const checkLogin = function(userDB, userInfo) {
   const { email, password } = userInfo;
   const userID = getIDfromEmail(users, email);
-  // console.log(userID);
 
   if (!emailLookup(userDB, email)) {
     return { error: "Error. Status 403" };
   }
-
   if (password !== userDB[userID].password) {
     return { error: "Error. Status 403" };
   }
@@ -211,7 +223,6 @@ const checkLogin = function(userDB, userInfo) {
 const getIDfromEmail = function(userDB, email) {
   let userID = null;
   for (let user in userDB) {
-    // console.log(userDB[user].email);
     if (email === userDB[user].email) {
       userID = userDB[user]["id"];
     } 
@@ -256,9 +267,6 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
-});
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
