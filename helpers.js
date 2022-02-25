@@ -20,7 +20,7 @@ const urlsForUser = function(id, urlDB) {
     }
   }
   return specificUrlDB;
-}; 
+};
 
 const checkLogin = function(userDB, userInfo) {
   const { email } = userInfo;
@@ -35,7 +35,7 @@ const getUserByEmail = function(email, database) {
   for (let user in database) {
     if (email === database[user].email) {
       userID = database[user]["id"];
-    } 
+    }
   }
   return userID;
 };
@@ -43,11 +43,11 @@ const getUserByEmail = function(email, database) {
 const checkValidRegistration = function(userDB, userInfo) {
   const { email, password } = userInfo;
   if (!email || !password) {
-    return { error: "Error. Status 400"};
+    return { error: "Error. Status 400. Invalid email/password"};
   }
 
   if (emailLookup(userDB, email)) {
-    return { error: "Error. Status 400" };
+    return { error: "Error. Status 400. Email already exists" };
   }
   return { error: null };
 };
@@ -57,9 +57,9 @@ const emailLookup = function(userDB, email) {
   for (let user in userDB) {
     if (email === userDB[user].email) {
       outputBool = true;
-    } 
+    }
   }
   return outputBool;
 };
 
-module.exports = { generateRandomString, urlsForUser, checkLogin, getUserByEmail, checkValidRegistration}
+module.exports = { generateRandomString, urlsForUser, checkLogin, getUserByEmail, checkValidRegistration};

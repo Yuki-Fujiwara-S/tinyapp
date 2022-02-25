@@ -1,14 +1,14 @@
 const express = require("express");
 const app = express();
 const PORT = 8080;
-const { generateRandomString, urlsForUser, checkLogin, getUserByEmail, checkValidRegistration} = require("./helpers")
+const { generateRandomString, urlsForUser, checkLogin, getUserByEmail, checkValidRegistration} = require("./helpers");
 
 const cookieSession = require('cookie-session');
 app.use(cookieSession({
   name: 'session',
   keys: ['secret key1', 'secret key2'],
   maxAge: 24 * 60 * 60 * 1000 // 24 hours
-}))
+}));
 
 const cookieParser = require('cookie-parser');
 app.use(cookieParser());
@@ -22,24 +22,24 @@ const bcrypt = require('bcryptjs');
 
 const urlDatabase = {
   b6UTxQ: {
-      longURL: "https://www.tsn.ca",
-      userID: "aJ48lW"
+    longURL: "https://www.tsn.ca",
+    userID: "aJ48lW"
   },
   i3BoGr: {
-      longURL: "https://www.google.ca",
-      userID: "aJ48lW"
+    longURL: "https://www.google.ca",
+    userID: "aJ48lW"
   }
 };
 
-const users = { 
+const users = {
   "userRandomID": {
-    id: "userRandomID", 
-    email: "user@example.com", 
+    id: "userRandomID",
+    email: "user@example.com",
     password: "purple-monkey-dinosaur"
   },
- "user2RandomID": {
-    id: "user2RandomID", 
-    email: "user2@example.com", 
+  "user2RandomID": {
+    id: "user2RandomID",
+    email: "user2@example.com",
     password: "dishwasher-funk"
   }
 };
@@ -49,7 +49,7 @@ app.get("/", (req, res) => {
   if (!req.session.user_id) {
     return res.redirect("/login");
   }
-  return res.redirect("/urls")
+  return res.redirect("/urls");
 });
 
 // GET /urls
@@ -58,7 +58,7 @@ app.get("/urls", (req, res) => {
     return res.status(403).send('<h1> User must log in to access URLs <a href="/login"> Log in here </a> </h1>');
   }
   const urls = urlsForUser(req.session.user_id, urlDatabase);
-  const templateVars = { 
+  const templateVars = {
     urls: urls,
     user: users[req.session.user_id]
   };
@@ -78,22 +78,22 @@ app.get("/urls/new", (req, res) => {
 
 // GET /urls/:shortURL
 app.get("/urls/:shortURL", (req, res) => {
-  if (!req.session.user_id){
+  if (!req.session.user_id) {
     return res.status(403).send('<h1> User must log in to access URLs <a href="/login"> Log in here </a> </h1>');
   }
-  const templateVars = { 
-    shortURL: req.params.shortURL, 
+  const templateVars = {
+    shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL].longURL,
     user: users[req.session.user_id]
-   };
+  };
   res.render("urls_show", templateVars);
 });
 
 // GET /u/:id
 app.get("/u/:shortURL", (req, res) => {
-  if (!urlDatabase[req.params.shortURL]){
-    res.redirect(403, "/urls")
-  } 
+  if (!urlDatabase[req.params.shortURL]) {
+    res.redirect(403, "/urls");
+  }
   const longURL = urlDatabase[req.params.shortURL].longURL;
   res.redirect(longURL);
 });
@@ -101,15 +101,15 @@ app.get("/u/:shortURL", (req, res) => {
 
 // POST /urls
 app.post("/urls", (req, res) => {
-  if (!req.session.user_id){
+  if (!req.session.user_id) {
     return res.redirect(403, "/login");
   }
   const randomString = generateRandomString();
-  urlDatabase[randomString] = { 
-    longURL:req.body.longURL, 
+  urlDatabase[randomString] = {
+    longURL:req.body.longURL,
     userID:req.session.user_id
   };
-  return res.redirect(`/urls/${randomString}`);   
+  return res.redirect(`/urls/${randomString}`);
 });
 
 // Update POST /urls/:shortURL/update --> Gave it this name instead of just /urls/:id because it made it easier for me to follow
@@ -117,9 +117,9 @@ app.post('/urls/:shortURL/update', (req, res) => {
   const shortURL = req.params.shortURL;
   const urls = urlsForUser(req.session.user_id, urlDatabase);
   if (!urls[shortURL]) {
-    return res.status(403).send('<h1> You do not have access to the URL </h1>')
+    return res.status(403).send('<h1> You do not have access to the URL </h1>');
   }
-  urlDatabase[shortURL] = { longURL: req.body.longURL, userID: req.session.user_id}
+  urlDatabase[shortURL] = { longURL: req.body.longURL, userID: req.session.user_id};
   res.redirect("/urls");
 });
 
@@ -128,7 +128,7 @@ app.post('/urls/:shortURL/delete', (req, res) => {
   const shortURL = req.params.shortURL;
   const urls = urlsForUser(req.session.user_id, urlDatabase);
   if (!urls[shortURL]) {
-    return res.status(403).send('<h1> You do not have access to the URL </h1>')
+    return res.status(403).send('<h1> You do not have access to the URL </h1>');
   }
   delete urlDatabase[shortURL];
   res.redirect("/urls");
@@ -160,12 +160,12 @@ app.post('/login', (req, res) => {
   }
 
   const { email, password } = req.body;
-  const user_id = getUserByEmail(email, users);
+  const userID = getUserByEmail(email, users);
 
-  bcrypt.compare(password, users[user_id].password)
+  bcrypt.compare(password, users[userID].password)
     .then((result) => {
       if (result) {
-        req.session.user_id = user_id;
+        req.session.user_id = userID;
         res.redirect("/urls");
       } else {
         return res.status(401).send('Password incorrect');
@@ -175,11 +175,11 @@ app.post('/login', (req, res) => {
 
 // POST /register - adds a new user to global user object
 app.post('/register', (req, res) => {
-  const user_id = generateRandomString();
+  const userID = generateRandomString();
   const { error } = checkValidRegistration(users, req.body);
   if (error) {
     console.log(error);
-    return res.status(403).send(`<h1> ${error} <a href="/register"> Register here </a> </h1>`);
+    return res.status(400).send(`<h1> ${error} <a href="/register"> Register here </a> </h1>`);
   }
 
   const {email, password} = req.body;
@@ -188,10 +188,10 @@ app.post('/register', (req, res) => {
       return bcrypt.hash(password, salt);
     })
     .then((hash) => {
-      users[user_id] = { id: user_id, email, password: hash };
-      req.session.user_id = user_id;
+      users[userID] = { id: userID, email, password: hash };
+      req.session.user_id = userID;
       res.redirect("/urls");
-    })
+    });
 });
 
 // Update POST /logout
